@@ -14,4 +14,10 @@
     <string name="glide_radio_string">Glide</string>
     <string name="udacity_radio_String">Udacity Code</string>
     <string name="retrofit_radio_string">Retrofit</string>
+
+
+    <string name="red">RED</string>
+    <string name="green">GREEN</string>
+    <string name="blue">BLUE</string>
+
 </resources>
