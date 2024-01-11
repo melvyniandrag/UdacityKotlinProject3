@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         } else{
             registerReceiver(
                 receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-                RECEIVER_NOT_EXPORTED
+                RECEIVER_EXPORTED
             )
         }
 
@@ -49,7 +49,35 @@ class MainActivity : AppCompatActivity() {
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+            Log.i("onReceive", intent?.action.toString() ?: "null intent")
+            if(intent?.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE) {
+                val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                if(id != null) {
+                    val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+                    val query = DownloadManager.Query()
+                    query.setFilterById(id)
+                    val cursor = downloadManager.query(query)
+                    if(cursor.moveToFirst()) {
+                        val statusColIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                        if(statusColIdx < 0){
+                            Log.i("Download" , "Bad col idx")
+                        }else {
+                            when (cursor.getInt(statusColIdx)) {
+                                DownloadManager.STATUS_SUCCESSFUL -> Log.i(
+                                    "Download",
+                                    "Download Success"
+                                )
+
+                                DownloadManager.STATUS_FAILED -> Log.i("Download", "Download Failed")
+                                else -> Log.i(
+                                    "Download",
+                                    "Download status is neither success nor fail: " + cursor.getInt(statusColIdx)
+                                    )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
