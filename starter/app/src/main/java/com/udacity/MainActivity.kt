@@ -143,8 +143,8 @@ class MainActivity : AppCompatActivity() {
                                                 getString(R.string.download_channel_id),
                                             )
                                                 .setSmallIcon(R.drawable.download)
-                                                .setContentTitle("My notification")
-                                                .setContentText("Hello World!")
+                                                .setContentTitle(getString(R.string.app_name))
+                                                .setContentText("download successful")
                                                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                                                 // Set the intent that fires when the user taps the notification.
                                                 .setContentIntent(notifyPendingIntent)
@@ -158,15 +158,10 @@ class MainActivity : AppCompatActivity() {
                                                 ) {
                                                     // TODO: Consider calling
                                                     // ActivityCompat#requestPermissions
-                                                    // here to request the missing permissions, and then overriding
-                                                    // public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                                                    //                                        int[] grantResults)
-                                                    // to handle the case where the user grants the permission. See the documentation
-                                                    // for ActivityCompat#requestPermissions for more details.
+                                                    ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
 
                                                     return
                                                 }
-                                                // notificationId is a unique int for each notification that you must define.
                                                 notify(NOTIFICATION_ID, builder.build())
                                             }
 
@@ -194,8 +189,8 @@ class MainActivity : AppCompatActivity() {
                                                 getString(R.string.download_channel_id),
                                             )
                                                 .setSmallIcon(R.drawable.download)
-                                                .setContentTitle("My notification")
-                                                .setContentText("Hello World!")
+                                                .setContentTitle(getString(R.string.app_name))
+                                                .setContentText("Download failed")
                                                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                                                 // Set the intent that fires when the user taps the notification.
                                                 .setContentIntent(notifyPendingIntent)
@@ -207,14 +202,7 @@ class MainActivity : AppCompatActivity() {
                                                         Manifest.permission.POST_NOTIFICATIONS
                                                     ) != PackageManager.PERMISSION_GRANTED
                                                 ) {
-                                                    // TODO: Consider calling
-                                                    // ActivityCompat#requestPermissions
-                                                    // here to request the missing permissions, and then overriding
-                                                    // public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                                                    //                                        int[] grantResults)
-                                                    // to handle the case where the user grants the permission. See the documentation
-                                                    // for ActivityCompat#requestPermissions for more details.
-
+                                                    ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
                                                     return
                                                 }
                                                 // notificationId is a unique int for each notification that you must define.
