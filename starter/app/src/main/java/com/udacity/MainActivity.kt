@@ -1,21 +1,31 @@
 package com.udacity
 
 import android.app.DownloadManager
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.udacity.databinding.ActivityMainBinding
+import com.udacity.receiver.AlarmReceiver
+import android.Manifest
 
+private val REQUEST_CODE = 0
+private const val NOTIFICATION_ID = 0
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -23,8 +33,10 @@ class MainActivity : AppCompatActivity() {
     private var downloadID: Long = 0
 
     private lateinit var notificationManager: NotificationManager
-    private lateinit var pendingIntent: PendingIntent
     private lateinit var action: NotificationCompat.Action
+    private lateinit var notifyIntent : Intent
+
+    private var notifyPendingIntent: PendingIntent? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +55,55 @@ class MainActivity : AppCompatActivity() {
 
         // TODO: Implement code below
         binding.includedContent.customButton.setOnClickListener{
-            download()
+            if(binding.includedContent.radioGroup1.checkedRadioButtonId == -1){
+                Toast.makeText(this, getString(R.string.nothing_selected), Toast.LENGTH_SHORT).show()
+            } else {
+                download(binding.includedContent.radioGroup1.checkedRadioButtonId)
+            }
+        }
+
+
+        createChannel(
+            getString(R.string.download_channel_id),
+            getString(R.string.download_channel_name)
+        )
+
+        notifyIntent = Intent(this, DetailActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
+        notifyPendingIntent = PendingIntent.getActivity(
+            this,
+            REQUEST_CODE,
+            notifyIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+
+    private fun createChannel(channelId: String, channelName: String) {
+        // TODO: Step 1.6 START create a channel
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationChannel = NotificationChannel(
+                channelId,
+                channelName,
+                NotificationManager.IMPORTANCE_HIGH
+            )
+                .apply {
+                    setShowBadge(false)
+                }
+
+            notificationChannel.enableLights(true)
+            notificationChannel.lightColor = Color.RED
+            notificationChannel.enableVibration(true)
+            notificationChannel.description =
+                getString(R.string.download_notification_channel_description)
+
+            val notificationManager = getSystemService(
+                NotificationManager::class.java
+            )
+            notificationManager.createNotificationChannel(notificationChannel)
+
         }
     }
 
@@ -63,11 +123,43 @@ class MainActivity : AppCompatActivity() {
                             Log.i("Download" , "Bad col idx")
                         }else {
                             when (cursor.getInt(statusColIdx)) {
-                                DownloadManager.STATUS_SUCCESSFUL -> Log.i(
-                                    "Download",
-                                    "Download Success"
-                                )
+                                DownloadManager.STATUS_SUCCESSFUL -> {
+                                    Log.i("Download","Download Success")
 
+
+                                    val builder = NotificationCompat.Builder(context!!.applicationContext,
+                                        getString(R.string.download_channel_id),
+                                    )
+                                        .setSmallIcon(R.drawable.download)
+                                        .setContentTitle("My notification")
+                                        .setContentText("Hello World!")
+                                        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                                        // Set the intent that fires when the user taps the notification.
+                                        .setContentIntent(notifyPendingIntent)
+                                        .setAutoCancel(true)
+
+                                    with(NotificationManagerCompat.from(context)) {
+                                        if (ActivityCompat.checkSelfPermission(
+                                                this@MainActivity,
+                                                Manifest.permission.POST_NOTIFICATIONS
+                                            ) != PackageManager.PERMISSION_GRANTED
+                                        ) {
+                                            // TODO: Consider calling
+                                            // ActivityCompat#requestPermissions
+                                            // here to request the missing permissions, and then overriding
+                                            // public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                            //                                        int[] grantResults)
+                                            // to handle the case where the user grants the permission. See the documentation
+                                            // for ActivityCompat#requestPermissions for more details.
+
+                                            return
+                                        }
+                                        // notificationId is a unique int for each notification that you must define.
+                                        notify(NOTIFICATION_ID, builder.build())
+                                    }
+
+
+                                }
                                 DownloadManager.STATUS_FAILED -> Log.i("Download", "Download Failed")
                                 else -> Log.i(
                                     "Download",
@@ -81,25 +173,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun download() {
+    private fun download(checked: Int) {
         Log.i("downloadCalled", "downloadCalled")
-        val request =
-            DownloadManager.Request(Uri.parse(URL))
-                .setTitle(getString(R.string.app_name))
-                .setDescription(getString(R.string.app_description))
-                .setRequiresCharging(false)
-                .setAllowedOverMetered(true)
-                .setAllowedOverRoaming(true)
+        val toDownload = when (checked) {
+            R.id.radio1 -> GLIDE_URL
+            R.id.radio2 -> UDACITY_URL
+            else -> RETROFIT_URL
+        }
+                val request =
+                DownloadManager.Request(Uri.parse(toDownload))
+                    .setTitle(getString(R.string.app_name))
+                    .setDescription(getString(R.string.app_description))
+                    .setRequiresCharging(false)
+                    .setAllowedOverMetered(true)
+                    .setAllowedOverRoaming(true)
 
-        val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-        downloadID =
-            downloadManager.enqueue(request)// enqueue puts the download request in the queue.
+                val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+            downloadID =
+                downloadManager.enqueue(request)// enqueue puts the download request in the queue.
         Log.i("Enqueue", "Enqueued " + downloadID.toString())
     }
 
     companion object {
-        private const val URL =
+        private const val GLIDE_URL = "https://github.com/bumptech/glide"
+
+        private const val UDACITY_URL =
             "https://github.com/udacity/nd940-c3-advanced-android-programming-project-starter/archive/master.zip"
-        private const val CHANNEL_ID = "channelId"
+
+        private const val RETROFIT_URL = "https://github.com/square/retrofit"
+
     }
 }

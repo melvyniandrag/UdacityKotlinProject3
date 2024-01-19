@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ND940C3-Project</string>
+    <string name="app_name">Animadownlode</string>
     <string name="app_description">Download files from Internet</string>
     <string name="action_settings">Settings</string>
 
@@ -20,4 +20,10 @@
     <string name="green">GREEN</string>
     <string name="blue">BLUE</string>
 
+    <string name="nothing_selected">Nothing selected for download</string>
+    <string name="download_complete">Download complete</string>
+    <string name="download_channel_id" translatable="false">download_channel_id</string>
+    <string name="download_channel_name">Download</string>
+    <string name="download_notification_channel_description">Download channel description</string>
+    <string name="snooze">snooze</string>
 </resources>
