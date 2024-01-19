@@ -23,6 +23,9 @@ import androidx.core.app.NotificationManagerCompat
 import com.udacity.databinding.ActivityMainBinding
 import com.udacity.receiver.AlarmReceiver
 import android.Manifest
+import java.lang.Exception
+import java.util.LinkedList
+import java.util.Queue
 
 private val REQUEST_CODE = 0
 private const val NOTIFICATION_ID = 0
@@ -30,13 +33,15 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+    private val downloadQueue: Queue<String> = LinkedList()
+
     private var downloadID: Long = 0
 
     private lateinit var notificationManager: NotificationManager
     private lateinit var action: NotificationCompat.Action
-    private lateinit var notifyIntent : Intent
+    //private lateinit var notifyIntent : Intent
 
-    private var notifyPendingIntent: PendingIntent? = null
+    //private var notifyPendingIntent: PendingIntent? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,16 +73,7 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.download_channel_name)
         )
 
-        notifyIntent = Intent(this, DetailActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
 
-        notifyPendingIntent = PendingIntent.getActivity(
-            this,
-            REQUEST_CODE,
-            notifyIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
     }
 
 
@@ -122,49 +118,119 @@ class MainActivity : AppCompatActivity() {
                         if(statusColIdx < 0){
                             Log.i("Download" , "Bad col idx")
                         }else {
-                            when (cursor.getInt(statusColIdx)) {
-                                DownloadManager.STATUS_SUCCESSFUL -> {
-                                    Log.i("Download","Download Success")
+                            try {
+                                when (cursor.getInt(statusColIdx)) {
+
+                                        DownloadManager.STATUS_SUCCESSFUL -> {
+                                            Log.i("Download", "Download Success")
+
+                                            val notifyIntent =
+                                                Intent(context, DetailActivity::class.java).apply {
+                                                    flags =
+                                                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                                }.putExtra("Status", "Success")
+                                                    .putExtra("Name", downloadQueue.remove())
+
+                                            val notifyPendingIntent = PendingIntent.getActivity(
+                                                context,
+                                                REQUEST_CODE,
+                                                notifyIntent,
+                                                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                                            )
+
+                                            val builder = NotificationCompat.Builder(
+                                                context!!.applicationContext,
+                                                getString(R.string.download_channel_id),
+                                            )
+                                                .setSmallIcon(R.drawable.download)
+                                                .setContentTitle("My notification")
+                                                .setContentText("Hello World!")
+                                                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                                                // Set the intent that fires when the user taps the notification.
+                                                .setContentIntent(notifyPendingIntent)
+                                                .setAutoCancel(true)
+
+                                            with(NotificationManagerCompat.from(context)) {
+                                                if (ActivityCompat.checkSelfPermission(
+                                                        this@MainActivity,
+                                                        Manifest.permission.POST_NOTIFICATIONS
+                                                    ) != PackageManager.PERMISSION_GRANTED
+                                                ) {
+                                                    // TODO: Consider calling
+                                                    // ActivityCompat#requestPermissions
+                                                    // here to request the missing permissions, and then overriding
+                                                    // public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                                    //                                        int[] grantResults)
+                                                    // to handle the case where the user grants the permission. See the documentation
+                                                    // for ActivityCompat#requestPermissions for more details.
+
+                                                    return
+                                                }
+                                                // notificationId is a unique int for each notification that you must define.
+                                                notify(NOTIFICATION_ID, builder.build())
+                                            }
 
 
-                                    val builder = NotificationCompat.Builder(context!!.applicationContext,
-                                        getString(R.string.download_channel_id),
-                                    )
-                                        .setSmallIcon(R.drawable.download)
-                                        .setContentTitle("My notification")
-                                        .setContentText("Hello World!")
-                                        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                                        // Set the intent that fires when the user taps the notification.
-                                        .setContentIntent(notifyPendingIntent)
-                                        .setAutoCancel(true)
-
-                                    with(NotificationManagerCompat.from(context)) {
-                                        if (ActivityCompat.checkSelfPermission(
-                                                this@MainActivity,
-                                                Manifest.permission.POST_NOTIFICATIONS
-                                            ) != PackageManager.PERMISSION_GRANTED
-                                        ) {
-                                            // TODO: Consider calling
-                                            // ActivityCompat#requestPermissions
-                                            // here to request the missing permissions, and then overriding
-                                            // public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                                            //                                        int[] grantResults)
-                                            // to handle the case where the user grants the permission. See the documentation
-                                            // for ActivityCompat#requestPermissions for more details.
-
-                                            return
                                         }
-                                        // notificationId is a unique int for each notification that you must define.
-                                        notify(NOTIFICATION_ID, builder.build())
-                                    }
+                                        DownloadManager.STATUS_FAILED -> {
+                                            Log.i("Download", "Download Failed")
 
+                                            val notifyIntent =
+                                                Intent(context, DetailActivity::class.java).apply {
+                                                    flags =
+                                                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                                }.putExtra("Status", "Failed")
+                                                    .putExtra("Name", downloadQueue.remove())
 
+                                            val notifyPendingIntent = PendingIntent.getActivity(
+                                                context,
+                                                REQUEST_CODE,
+                                                notifyIntent,
+                                                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                                            )
+
+                                            val builder = NotificationCompat.Builder(
+                                                context!!.applicationContext,
+                                                getString(R.string.download_channel_id),
+                                            )
+                                                .setSmallIcon(R.drawable.download)
+                                                .setContentTitle("My notification")
+                                                .setContentText("Hello World!")
+                                                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                                                // Set the intent that fires when the user taps the notification.
+                                                .setContentIntent(notifyPendingIntent)
+                                                .setAutoCancel(true)
+
+                                            with(NotificationManagerCompat.from(context)) {
+                                                if (ActivityCompat.checkSelfPermission(
+                                                        this@MainActivity,
+                                                        Manifest.permission.POST_NOTIFICATIONS
+                                                    ) != PackageManager.PERMISSION_GRANTED
+                                                ) {
+                                                    // TODO: Consider calling
+                                                    // ActivityCompat#requestPermissions
+                                                    // here to request the missing permissions, and then overriding
+                                                    // public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                                    //                                        int[] grantResults)
+                                                    // to handle the case where the user grants the permission. See the documentation
+                                                    // for ActivityCompat#requestPermissions for more details.
+
+                                                    return
+                                                }
+                                                // notificationId is a unique int for each notification that you must define.
+                                                notify(NOTIFICATION_ID, builder.build())
+                                            }
+
+                                        }
+                                        else -> Log.i(
+                                                "Download",
+                                                "Download status is neither success nor fail: " + cursor.getInt(
+                                                    statusColIdx
+                                                )
+                                            )
                                 }
-                                DownloadManager.STATUS_FAILED -> Log.i("Download", "Download Failed")
-                                else -> Log.i(
-                                    "Download",
-                                    "Download status is neither success nor fail: " + cursor.getInt(statusColIdx)
-                                    )
+                            } catch (e: Exception){
+                                Log.e("Error", "download error")
                             }
                         }
                     }
@@ -175,22 +241,30 @@ class MainActivity : AppCompatActivity() {
 
     private fun download(checked: Int) {
         Log.i("downloadCalled", "downloadCalled")
+
+        downloadQueue.add(
+            when (checked){
+                R.id.radio1 -> getString(R.string.glide_radio_string)
+                R.id.radio2 -> getString(R.string.udacity_radio_String)
+                else -> getString(R.string.retrofit_radio_string)
+            }
+        )
+
         val toDownload = when (checked) {
             R.id.radio1 -> GLIDE_URL
             R.id.radio2 -> UDACITY_URL
             else -> RETROFIT_URL
         }
-                val request =
-                DownloadManager.Request(Uri.parse(toDownload))
-                    .setTitle(getString(R.string.app_name))
-                    .setDescription(getString(R.string.app_description))
-                    .setRequiresCharging(false)
-                    .setAllowedOverMetered(true)
-                    .setAllowedOverRoaming(true)
+        val request =
+            DownloadManager.Request(Uri.parse(toDownload))
+                .setTitle(getString(R.string.app_name))
+                .setDescription(getString(R.string.app_description))
+                .setRequiresCharging(false)
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
 
-                val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-            downloadID =
-                downloadManager.enqueue(request)// enqueue puts the download request in the queue.
+        val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+        downloadID = downloadManager.enqueue(request)// enqueue puts the download request in the queue.
         Log.i("Enqueue", "Enqueued " + downloadID.toString())
     }
 
